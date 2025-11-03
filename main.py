@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                               QFileDialog, QProgressBar, QGroupBox, QSpinBox,
                               QDoubleSpinBox, QCheckBox, QComboBox, QMessageBox,
                               QProgressDialog, QTabWidget, QListWidget, QListWidgetItem,
-                              QSplitter, QScrollArea, QSizePolicy)
+                              QSplitter, QScrollArea, QSizePolicy, QGridLayout)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize, QRect, QPoint, QTimer
 from PyQt6.QtGui import QPixmap, QImage, QPainter, QPen, QColor
 # Lazy import torch and transformers để tăng tốc khởi động
@@ -1909,63 +1909,54 @@ If any information is not found, please return a null or empty string for that k
         self.custom_prompt.setMaximumHeight(60)
         params_layout.addWidget(self.custom_prompt)
         
-        # Max new tokens
-        max_tokens_layout = QHBoxLayout()
-        max_tokens_layout.addWidget(QLabel("Số tokens tối đa:"))
+        # Grid layout for parameters (2 columns) to save space
+        params_grid = QGridLayout()
+        params_grid.setSpacing(10)
+        params_grid.setColumnStretch(1, 1)  # Column 1 (values) stretch
+        params_grid.setColumnStretch(3, 1)  # Column 3 (values) stretch
+        
+        # Row 0: Max tokens | Temperature
+        params_grid.addWidget(QLabel("Tokens:"), 0, 0)
         self.max_tokens_spin = QSpinBox()
         self.max_tokens_spin.setRange(1, 16384)
         self.max_tokens_spin.setValue(3000)
-        self.max_tokens_spin.setMinimumWidth(100)  # Đảm bảo hiển thị
-        max_tokens_layout.addWidget(self.max_tokens_spin)
-        max_tokens_layout.addStretch()  # Push to left
-        params_layout.addLayout(max_tokens_layout)
+        self.max_tokens_spin.setMinimumWidth(80)
+        params_grid.addWidget(self.max_tokens_spin, 0, 1)
         
-        # Temperature
-        temp_layout = QHBoxLayout()
-        temp_layout.addWidget(QLabel("Temperature:"))
+        params_grid.addWidget(QLabel("Temperature:"), 0, 2)
         self.temperature_spin = QDoubleSpinBox()
         self.temperature_spin.setRange(0.0, 2.0)
         self.temperature_spin.setSingleStep(0.1)
         self.temperature_spin.setValue(0.2)
-        self.temperature_spin.setMinimumWidth(100)  # Đảm bảo hiển thị
-        temp_layout.addWidget(self.temperature_spin)
-        temp_layout.addStretch()  # Push to left
-        params_layout.addLayout(temp_layout)
+        self.temperature_spin.setMinimumWidth(80)
+        params_grid.addWidget(self.temperature_spin, 0, 3)
         
-        # Top-p
-        top_p_layout = QHBoxLayout()
-        top_p_layout.addWidget(QLabel("Top-p:"))
+        # Row 1: Top-p | Top-k
+        params_grid.addWidget(QLabel("Top-p:"), 1, 0)
         self.top_p_spin = QDoubleSpinBox()
         self.top_p_spin.setRange(0.0, 1.0)
         self.top_p_spin.setSingleStep(0.1)
         self.top_p_spin.setValue(0.8)
-        self.top_p_spin.setMinimumWidth(100)  # Đảm bảo hiển thị
-        top_p_layout.addWidget(self.top_p_spin)
-        top_p_layout.addStretch()  # Push to left
-        params_layout.addLayout(top_p_layout)
+        self.top_p_spin.setMinimumWidth(80)
+        params_grid.addWidget(self.top_p_spin, 1, 1)
         
-        # Top-k
-        top_k_layout = QHBoxLayout()
-        top_k_layout.addWidget(QLabel("Top-k:"))
+        params_grid.addWidget(QLabel("Top-k:"), 1, 2)
         self.top_k_spin = QSpinBox()
         self.top_k_spin.setRange(1, 100)
         self.top_k_spin.setValue(20)
-        self.top_k_spin.setMinimumWidth(100)  # Đảm bảo hiển thị
-        top_k_layout.addWidget(self.top_k_spin)
-        top_k_layout.addStretch()  # Push to left
-        params_layout.addLayout(top_k_layout)
+        self.top_k_spin.setMinimumWidth(80)
+        params_grid.addWidget(self.top_k_spin, 1, 3)
         
-        # Repetition penalty
-        rep_penalty_layout = QHBoxLayout()
-        rep_penalty_layout.addWidget(QLabel("Hệ số lặp lại:"))
+        # Row 2: Repetition penalty (span 2 columns)
+        params_grid.addWidget(QLabel("Hệ số lặp lại:"), 2, 0)
         self.rep_penalty_spin = QDoubleSpinBox()
         self.rep_penalty_spin.setRange(1.0, 2.0)
         self.rep_penalty_spin.setSingleStep(0.1)
         self.rep_penalty_spin.setValue(1.0)
-        self.rep_penalty_spin.setMinimumWidth(100)  # Đảm bảo hiển thị
-        rep_penalty_layout.addWidget(self.rep_penalty_spin)
-        rep_penalty_layout.addStretch()  # Push to left
-        params_layout.addLayout(rep_penalty_layout)
+        self.rep_penalty_spin.setMinimumWidth(80)
+        params_grid.addWidget(self.rep_penalty_spin, 2, 1)
+        
+        params_layout.addLayout(params_grid)
         
         params_group.setLayout(params_layout)
         right_panel.addWidget(params_group, 3)  # Stretch factor 3 for params - ưu tiên hiển thị params
@@ -2024,8 +2015,8 @@ If any information is not found, please return a null or empty string for that k
         # Set scroll area widget
         right_scroll.setWidget(right_panel_widget)
         
-        # Set minimum width for right panel - flexible sizing
-        right_scroll.setMinimumWidth(320)
+        # Set minimum width for right panel - increased to show all widgets
+        right_scroll.setMinimumWidth(400)  # Tăng từ 320 lên 400
         right_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
         # Add scroll areas to splitter (3 columns: left, middle, right)

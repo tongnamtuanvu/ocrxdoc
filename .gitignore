@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Application specific
+models/
+history/
+*.db
+crash_log.txt
+*.log
+
+# PyInstaller
+*.spec
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Poppler (optional, can be downloaded separately)
+poppler/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
+

@@ -3693,16 +3693,16 @@ If any information is not found, please return a null or empty string for that k
                 json_str = result[json_start:json_end]
                 json_response = json.loads(json_str)
                 
-                # Format theo template với emoji
-                formatted = "📄 KẾT QUẢ PHÂN TÍCH VĂN BẢN\n"
+                # Format theo template không có emoji
+                formatted = "KẾT QUẢ PHÂN TÍCH VĂN BẢN\n"
                 formatted += "=" * 60 + "\n\n"
-                formatted += f"🔹 LOẠI VĂN BẢN: {json_response.get('loai_van_ban', 'N/A')}\n\n"
-                formatted += f"🔹 SỐ KÝ HIỆU: {json_response.get('so_ky_hieu', 'N/A')}\n\n"
-                formatted += f"🔹 CƠ QUAN BAN HÀNH: {json_response.get('co_quan_ban_hanh', 'N/A')}\n\n"
-                formatted += f"🔹 NGÀY BAN HÀNH: {json_response.get('ngay_ban_hanh', 'N/A')}\n\n"
-                formatted += f"🔹 TRÍCH YẾU:\n{json_response.get('trich_yeu', 'N/A')}\n\n"
+                formatted += f"LOẠI VĂN BẢN: {json_response.get('loai_van_ban', 'N/A')}\n\n"
+                formatted += f"SỐ KÝ HIỆU: {json_response.get('so_ky_hieu', 'N/A')}\n\n"
+                formatted += f"CƠ QUAN BAN HÀNH: {json_response.get('co_quan_ban_hanh', 'N/A')}\n\n"
+                formatted += f"NGÀY BAN HÀNH: {json_response.get('ngay_ban_hanh', 'N/A')}\n\n"
+                formatted += f"TRÍCH YẾU:\n{json_response.get('trich_yeu', 'N/A')}\n\n"
                 formatted += "=" * 60 + "\n\n"
-                formatted += "📋 JSON GỐC:\n"
+                formatted += "JSON GỐC:\n"
                 formatted += json.dumps(json_response, ensure_ascii=False, indent=2)
                 
                 return formatted

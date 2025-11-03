@@ -3615,8 +3615,9 @@ If any information is not found, please return a null or empty string for that k
             self.processing_time_label.setText("Thời gian xử lý: Hoàn thành")
             self.processing_time_label.setStyleSheet("color: #27ae60; font-size: 11pt; font-weight: bold; padding: 8px; background-color: white; border-radius: 8px;")
         
-        # Display result
-        self.output_text.setText(result)
+        # Display result - format if JSON
+        formatted_result = self.format_result_display(result)
+        self.output_text.setText(formatted_result)
         # Stop progress bar - set range and value to stop animation
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(100)
@@ -3682,6 +3683,35 @@ If any information is not found, please return a null or empty string for that k
         self.image_label.clear_roi()
         self.roi_info_label.setText("Chưa chọn vùng. Click và drag để chọn vùng OCR")
     
+    def format_result_display(self, result):
+        """Format kết quả để hiển thị đẹp hơn nếu là JSON"""
+        try:
+            # Try to parse JSON from result
+            if '{' in result and '}' in result:
+                json_start = result.find('{')
+                json_end = result.rfind('}') + 1
+                json_str = result[json_start:json_end]
+                json_response = json.loads(json_str)
+                
+                # Format theo template với emoji
+                formatted = "📄 KẾT QUẢ PHÂN TÍCH VĂN BẢN\n"
+                formatted += "=" * 60 + "\n\n"
+                formatted += f"🔹 LOẠI VĂN BẢN: {json_response.get('loai_van_ban', 'N/A')}\n\n"
+                formatted += f"🔹 SỐ KÝ HIỆU: {json_response.get('so_ky_hieu', 'N/A')}\n\n"
+                formatted += f"🔹 CƠ QUAN BAN HÀNH: {json_response.get('co_quan_ban_hanh', 'N/A')}\n\n"
+                formatted += f"🔹 NGÀY BAN HÀNH: {json_response.get('ngay_ban_hanh', 'N/A')}\n\n"
+                formatted += f"🔹 TRÍCH YẾU:\n{json_response.get('trich_yeu', 'N/A')}\n\n"
+                formatted += "=" * 60 + "\n\n"
+                formatted += "📋 JSON GỐC:\n"
+                formatted += json.dumps(json_response, ensure_ascii=False, indent=2)
+                
+                return formatted
+        except Exception as e:
+            print(f"[Format] Không thể format kết quả: {e}")
+        
+        # Return original result if formatting fails
+        return result
+    
     def on_processing_error(self, error_message):
         # Cleanup temp files từ ROI crop
         if hasattr(self, 'processing_temp_files'):
@@ -3738,32 +3768,64 @@ If any information is not found, please return a null or empty string for that k
         
         if file_name:
             try:
-                # Chuẩn bị dữ liệu JSON
-                output_data = {
-                    "ocr_result": self.output_text.toPlainText(),
-                    "file_info": {
-                        "file_path": self.current_file_path if self.current_file_path else None,
-                        "file_name": os.path.basename(self.current_file_path) if self.current_file_path else None,
-                        "file_type": self.current_file_type if self.current_file_type else None
-                    },
-                    "processing_info": {
-                        "model": self.current_model,
-                        "device": self.current_device,
-                        "timestamp": datetime.now().isoformat(),
-                        "processing_time": self.processing_time_label.text()
-                    },
-                    "generation_params": self.get_generation_params()
-                }
+                result_text = self.output_text.toPlainText()
                 
                 # Kiểm tra extension để quyết định format
                 if file_name.endswith('.json'):
+                    # Try to parse existing JSON from result
+                    json_response = None
+                    try:
+                        # Extract JSON from result text
+                        if '{' in result_text and '}' in result_text:
+                            json_start = result_text.find('{')
+                            json_end = result_text.rfind('}') + 1
+                            json_str = result_text[json_start:json_end]
+                            json_response = json.loads(json_str)
+                    except Exception as parse_error:
+                        print(f"[Save] Không thể parse JSON từ kết quả: {parse_error}")
+                    
+                    # Prepare output data với format yêu cầu
+                    if json_response and isinstance(json_response, dict):
+                        # Format theo template với emoji và cấu trúc rõ ràng
+                        output_data = {
+                            "loai_van_ban": json_response.get('loai_van_ban', 'N/A'),
+                            "so_ky_hieu": json_response.get('so_ky_hieu', 'N/A'),
+                            "co_quan_ban_hanh": json_response.get('co_quan_ban_hanh', 'N/A'),
+                            "ngay_ban_hanh": json_response.get('ngay_ban_hanh', 'N/A'),
+                            "trich_yeu": json_response.get('trich_yeu', 'N/A'),
+                            "metadata": {
+                                "file_name": os.path.basename(self.current_file_path) if self.current_file_path else None,
+                                "model": f"{self.current_model}B" if self.current_model else None,
+                                "device": self.current_device,
+                                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "processing_time": self.processing_time_label.text()
+                            }
+                        }
+                    else:
+                        # Fallback: lưu raw result nếu không parse được JSON
+                        output_data = {
+                            "ocr_result": result_text,
+                            "file_info": {
+                                "file_path": self.current_file_path if self.current_file_path else None,
+                                "file_name": os.path.basename(self.current_file_path) if self.current_file_path else None,
+                                "file_type": self.current_file_type if self.current_file_type else None
+                            },
+                            "processing_info": {
+                                "model": self.current_model,
+                                "device": self.current_device,
+                                "timestamp": datetime.now().isoformat(),
+                                "processing_time": self.processing_time_label.text()
+                            },
+                            "generation_params": self.get_generation_params()
+                        }
+                    
                     # Lưu dạng JSON
                     with open(file_name, 'w', encoding='utf-8') as f:
                         json.dump(output_data, f, ensure_ascii=False, indent=2)
                 else:
                     # Lưu dạng text thuần
                     with open(file_name, 'w', encoding='utf-8') as f:
-                        f.write(self.output_text.toPlainText())
+                        f.write(result_text)
                 
                 self.progress_label.setText(f"Đã lưu kết quả vào {file_name}")
                 self.progress_label.setStyleSheet("color: #27ae60; font-size: 10pt;")

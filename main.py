@@ -1269,8 +1269,7 @@ class Qwen3VLApp(QMainWindow):
                     json_start = result_text.find('{')
                     json_end = result_text.rfind('}') + 1
                     json_str = result_text[json_start:json_end]
-                    # Validate it's valid JSON
-                    import json
+                    # Validate it's valid JSON (json already imported at top)
                     parsed = json.loads(json_str)
                     ocr_result_json = json.dumps(parsed, ensure_ascii=False, indent=2)
                     print(f"[Database] Đã phân tích JSON từ kết quả OCR: {len(ocr_result_json)} ký tự")
@@ -1622,7 +1621,7 @@ class Qwen3VLApp(QMainWindow):
         
         left_panel_widget = QWidget()
         left_panel_widget.setStyleSheet("background-color: #f5f7fa;")
-        left_panel_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding)
+        left_panel_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         left_panel = QVBoxLayout()
         left_panel.setSpacing(12)  # Giảm spacing để compact hơn
         left_panel.setContentsMargins(12, 12, 12, 12)  # Padding đồng đều
@@ -2153,17 +2152,20 @@ If any information is not found, please return a null or empty string for that k
         params_group.setLayout(params_layout)
         left_panel.addWidget(params_group)
         
-        # Add stretch to push content to top
-        left_panel.addStretch()
+        # Don't add stretch - let content fill naturally
+        # left_panel.addStretch()  # Removed - causing visibility issues
         left_panel_widget.setLayout(left_panel)
+        
+        # Ensure widget has minimum size
+        left_panel_widget.setMinimumSize(280, 400)
         
         # Set scroll area widget
         left_scroll.setWidget(left_panel_widget)
         
         # Set minimum width for left panel - increased to fit params
-        left_scroll.setMinimumWidth(300)  # Tăng từ 250 lên 300
-        left_scroll.setMaximumWidth(500)  # Tăng từ 400 lên 500
-        left_scroll.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+        left_scroll.setMinimumWidth(320)  # Tăng lên 320 để đảm bảo hiển thị
+        left_scroll.setMaximumWidth(600)  # Tăng max width
+        left_scroll.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Expanding)
         
         # Column 2 (Middle) - File preview, ROI, and upload controls with scroll
         middle_scroll = QScrollArea()
@@ -2353,9 +2355,12 @@ If any information is not found, please return a null or empty string for that k
         ocr_splitter.setStretchFactor(2, 3)
         
         # Set initial sizes proportionally - balanced with more space for column 3
-        # Column 1: 22%, Column 2: 32%, Column 3: 46%
-        total_width = 1200  # Approximate default width
-        ocr_splitter.setSizes([int(total_width * 0.22), int(total_width * 0.32), int(total_width * 0.46)])
+        # Column 1: 25%, Column 2: 35%, Column 3: 40% (increased column 1)
+        total_width = 1400  # Increased for fullscreen
+        ocr_splitter.setSizes([int(total_width * 0.25), int(total_width * 0.35), int(total_width * 0.40)])
+        
+        # Ensure column 1 is visible - set minimum size
+        ocr_splitter.setChildrenCollapsible(False)  # Prevent columns from collapsing
         
         # Add splitter to OCR tab layout
         ocr_layout = QHBoxLayout()

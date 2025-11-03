@@ -1506,40 +1506,46 @@ class Qwen3VLApp(QMainWindow):
     def refresh_history(self):
         """Refresh danh sách lịch sử trong tab History"""
         try:
+            # Kiểm tra widget đã được init chưa
+            if not hasattr(self, 'history_list_widget'):
+                print(f"[History] history_list_widget chưa được init, bỏ qua refresh")
+                return
+            
+            if self.history_list_widget is None:
+                print(f"[History] history_list_widget là None, bỏ qua refresh")
+                return
+            
             # Luôn load history từ database
             history = self.load_history()
             print(f"[History] Loaded {len(history)} items from database")
             
-            # Chỉ update UI nếu widget đã được init
-            if hasattr(self, 'history_list_widget') and self.history_list_widget:
-                self.history_list_widget.clear()
-                print(f"[History] Clearing history list widget")
+            # Clear và update UI
+            self.history_list_widget.clear()
+            print(f"[History] Clearing history list widget")
+            
+            for item in history:
+                # Tạo item text với timestamp và file name
+                display_text = f"{item['timestamp']} - {item['file_name']}"
+                if item['model_used']:
+                    display_text += f" ({item['model_used']})"
                 
-                for item in history:
-                    # Tạo item text với timestamp và file name
-                    display_text = f"{item['timestamp']} - {item['file_name']}"
-                    if item['model_used']:
-                        display_text += f" ({item['model_used']})"
-                    
-                    list_item = QListWidgetItem(display_text)
-                    list_item.setData(Qt.ItemDataRole.UserRole, item)  # Lưu full data
-                    
-                    # Nếu có preview image, set icon
-                    if item['preview_image_path'] and os.path.exists(item['preview_image_path']):
-                        try:
-                            pixmap = QPixmap(item['preview_image_path'])
-                            if not pixmap.isNull():
-                                icon = QPixmap(pixmap).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, 
-                                                             Qt.TransformationMode.SmoothTransformation)
-                                list_item.setIcon(icon)
-                        except:
-                            pass
-                    
-                    self.history_list_widget.addItem(list_item)
+                list_item = QListWidgetItem(display_text)
+                list_item.setData(Qt.ItemDataRole.UserRole, item)  # Lưu full data
                 
-                print(f"[History] Added {len(history)} items to list widget")
-            else:
-                print(f"[History] Warning: history_list_widget chưa được init, không thể refresh UI")
+                # Nếu có preview image, set icon
+                if item['preview_image_path'] and os.path.exists(item['preview_image_path']):
+                    try:
+                        pixmap = QPixmap(item['preview_image_path'])
+                        if not pixmap.isNull():
+                            icon = QPixmap(pixmap).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, 
+                                                         Qt.TransformationMode.SmoothTransformation)
+                            list_item.setIcon(icon)
+                    except:
+                        pass
+                
+                self.history_list_widget.addItem(list_item)
+            
+            print(f"[History] Added {len(history)} items to list widget")
         except Exception as e:
             print(f"[History] Lỗi khi refresh history: {e}")
             import traceback
@@ -2590,8 +2596,9 @@ If any information is not found, please return a null or empty string for that k
         # Connect tab change signal để refresh history khi chuyển tab
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
         
-        # Load history lần đầu
-        self.refresh_history()
+        # Load history lần đầu - CHỈ SAU KHI widget đã được init
+        # Sử dụng QTimer để đảm bảo widget đã được tạo xong
+        QTimer.singleShot(100, self.refresh_history)
         
     def on_tab_changed(self, index):
         """Xử lý khi chuyển tab - refresh history nếu chuyển sang History tab"""

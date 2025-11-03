@@ -1299,8 +1299,12 @@ class Qwen3VLApp(QMainWindow):
             
             print(f"[Database] Đã lưu lịch sử OCR: ID={history_id}, File={file_name}")
             
-            # Refresh history tab nếu đang mở
-            self.refresh_history()
+            # Luôn refresh history (ngay cả khi tab chưa mở - sẽ refresh khi tab được mở)
+            try:
+                self.refresh_history()
+                print(f"[Database] Đã refresh history tab")
+            except Exception as refresh_error:
+                print(f"[Database] Lỗi khi refresh history: {refresh_error}")
             
             return history_id
         except Exception as e:
@@ -1310,8 +1314,27 @@ class Qwen3VLApp(QMainWindow):
     def load_history(self, limit=100):
         """Load lịch sử OCR từ database"""
         try:
+            # Kiểm tra database file có tồn tại không
+            if not os.path.exists(self.db_path):
+                print(f"[Database] Database file không tồn tại: {self.db_path}")
+                return []
+            
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
+            
+            # Kiểm tra table có tồn tại không
+            cursor.execute('''
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='ocr_history'
+            ''')
+            table_exists = cursor.fetchone()
+            
+            if not table_exists:
+                print(f"[Database] Table ocr_history không tồn tại, tạo lại...")
+                conn.close()
+                self.init_database()
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
             
             cursor.execute('''
                 SELECT id, file_path, file_name, file_type, ocr_result, ocr_result_json,
@@ -1323,6 +1346,8 @@ class Qwen3VLApp(QMainWindow):
             
             results = cursor.fetchall()
             conn.close()
+            
+            print(f"[Database] Loaded {len(results)} history items from database")
             
             history_list = []
             for row in results:
@@ -1342,6 +1367,8 @@ class Qwen3VLApp(QMainWindow):
             return history_list
         except Exception as e:
             print(f"[Database] Lỗi khi load lịch sử: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
     def update_history(self, history_id, ocr_result=None, file_name=None):
@@ -1461,31 +1488,45 @@ class Qwen3VLApp(QMainWindow):
     
     def refresh_history(self):
         """Refresh danh sách lịch sử trong tab History"""
-        if hasattr(self, 'history_list_widget') and self.history_list_widget:
-            self.history_list_widget.clear()
+        try:
+            # Luôn load history từ database
             history = self.load_history()
+            print(f"[History] Loaded {len(history)} items from database")
             
-            for item in history:
-                # Tạo item text với timestamp và file name
-                display_text = f"{item['timestamp']} - {item['file_name']}"
-                if item['model_used']:
-                    display_text += f" ({item['model_used']})"
+            # Chỉ update UI nếu widget đã được init
+            if hasattr(self, 'history_list_widget') and self.history_list_widget:
+                self.history_list_widget.clear()
+                print(f"[History] Clearing history list widget")
                 
-                list_item = QListWidgetItem(display_text)
-                list_item.setData(Qt.ItemDataRole.UserRole, item)  # Lưu full data
+                for item in history:
+                    # Tạo item text với timestamp và file name
+                    display_text = f"{item['timestamp']} - {item['file_name']}"
+                    if item['model_used']:
+                        display_text += f" ({item['model_used']})"
+                    
+                    list_item = QListWidgetItem(display_text)
+                    list_item.setData(Qt.ItemDataRole.UserRole, item)  # Lưu full data
+                    
+                    # Nếu có preview image, set icon
+                    if item['preview_image_path'] and os.path.exists(item['preview_image_path']):
+                        try:
+                            pixmap = QPixmap(item['preview_image_path'])
+                            if not pixmap.isNull():
+                                icon = QPixmap(pixmap).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, 
+                                                             Qt.TransformationMode.SmoothTransformation)
+                                list_item.setIcon(icon)
+                        except:
+                            pass
+                    
+                    self.history_list_widget.addItem(list_item)
                 
-                # Nếu có preview image, set icon
-                if item['preview_image_path'] and os.path.exists(item['preview_image_path']):
-                    try:
-                        pixmap = QPixmap(item['preview_image_path'])
-                        if not pixmap.isNull():
-                            icon = QPixmap(pixmap).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, 
-                                                         Qt.TransformationMode.SmoothTransformation)
-                            list_item.setIcon(icon)
-                    except:
-                        pass
-                
-                self.history_list_widget.addItem(list_item)
+                print(f"[History] Added {len(history)} items to list widget")
+            else:
+                print(f"[History] Warning: history_list_widget chưa được init, không thể refresh UI")
+        except Exception as e:
+            print(f"[History] Lỗi khi refresh history: {e}")
+            import traceback
+            traceback.print_exc()
         
     def init_ui(self):
         self.setWindowTitle("Ứng Dụng OCR")

@@ -1449,9 +1449,12 @@ class Qwen3VLApp(QMainWindow):
         
     def init_ui(self):
         self.setWindowTitle("Ứng Dụng OCR")
-        self.setGeometry(100, 100, 1400, 900)
-        # Set minimum window size for responsive design
-        self.setMinimumSize(800, 600)
+        
+        # Fullscreen on startup - full màn hình máy tính
+        self.showFullScreen()
+        
+        # Set minimum window size for responsive design - optimized for usability
+        self.setMinimumSize(900, 600)
         
         # Apply modern stylesheet
         self.apply_modern_stylesheet()
@@ -1500,19 +1503,31 @@ class Qwen3VLApp(QMainWindow):
         
         # Use QSplitter for resizable panels
         ocr_splitter = QSplitter(Qt.Orientation.Horizontal)
+        ocr_splitter.setHandleWidth(4)
+        ocr_splitter.setChildrenCollapsible(False)  # Prevent panels from collapsing
         ocr_splitter.setStyleSheet("""
             QSplitter::handle {
                 background-color: #e1e8ed;
-                width: 3px;
+                width: 4px;
+                margin: 0px;
+                padding: 0px;
             }
             QSplitter::handle:hover {
                 background-color: #3498db;
             }
         """)
         
-        # Left panel widget - Image and controls
+        # Column 1 (Left) - Model configuration only with scroll
+        left_scroll = QScrollArea()
+        left_scroll.setWidgetResizable(True)
+        left_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        left_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        left_scroll.setStyleSheet("QScrollArea { border: none; background-color: #f5f7fa; }")
+        
         left_panel_widget = QWidget()
         left_panel_widget.setStyleSheet("background-color: #f5f7fa;")
+        left_panel_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding)
         left_panel = QVBoxLayout()
         left_panel.setSpacing(15)
         left_panel.setContentsMargins(10, 10, 10, 10)
@@ -1618,6 +1633,33 @@ class Qwen3VLApp(QMainWindow):
         model_group.setLayout(model_layout)
         left_panel.addWidget(model_group)
         
+        # Add stretch to push content to top
+        left_panel.addStretch()
+        left_panel_widget.setLayout(left_panel)
+        
+        # Set scroll area widget
+        left_scroll.setWidget(left_panel_widget)
+        
+        # Set minimum width for left panel
+        left_scroll.setMinimumWidth(250)
+        left_scroll.setMaximumWidth(400)
+        left_scroll.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+        
+        # Column 2 (Middle) - File preview, ROI, and upload controls with scroll
+        middle_scroll = QScrollArea()
+        middle_scroll.setWidgetResizable(True)
+        middle_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        middle_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        middle_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        middle_scroll.setStyleSheet("QScrollArea { border: none; background-color: #f5f7fa; }")
+        
+        middle_panel_widget = QWidget()
+        middle_panel_widget.setStyleSheet("background-color: #f5f7fa;")
+        middle_panel_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        middle_panel = QVBoxLayout()
+        middle_panel.setSpacing(15)
+        middle_panel.setContentsMargins(10, 10, 10, 10)
+        
         # File display
         file_group = QGroupBox("Xem Trước File")
         file_layout = QVBoxLayout()
@@ -1641,9 +1683,10 @@ class Qwen3VLApp(QMainWindow):
         self.image_label = ImageROILabel()
         self.image_label.setText("Chưa có file nào được tải")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # Make image label responsive - minimum size but can expand
-        self.image_label.setMinimumSize(300, 300)
+        # Make image label responsive - very flexible sizing
+        self.image_label.setMinimumSize(200, 200)
         self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.image_label.setScaledContents(False)  # Maintain aspect ratio
         self.image_label.setStyleSheet("""
             border: 3px solid #e1e8ed;
             border-radius: 12px;
@@ -1652,6 +1695,12 @@ class Qwen3VLApp(QMainWindow):
         """)
         self.image_label.roi_changed.connect(self.on_roi_changed)
         file_layout.addWidget(self.image_label)
+        
+        # ROI info label
+        self.roi_info_label = QLabel("Chưa chọn vùng. Click và drag để chọn vùng OCR")
+        self.roi_info_label.setStyleSheet("color: #3498db; font-size: 9pt; padding: 5px;")
+        self.roi_info_label.setVisible(False)  # Hidden by default, shown when ROI mode is enabled
+        file_layout.addWidget(self.roi_info_label)
         
         # File info label
         self.file_info_label = QLabel("File: Không có")
@@ -1687,19 +1736,30 @@ class Qwen3VLApp(QMainWindow):
         file_layout.addWidget(self.file_type_label)
         
         file_group.setLayout(file_layout)
-        left_panel.addWidget(file_group)
+        middle_panel.addWidget(file_group)
         
         # Add stretch to push content to top
-        left_panel.addStretch()
-        left_panel_widget.setLayout(left_panel)
+        middle_panel.addStretch()
+        middle_panel_widget.setLayout(middle_panel)
         
-        # Set minimum width for left panel
-        left_panel_widget.setMinimumWidth(350)
-        left_panel_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        # Set scroll area widget
+        middle_scroll.setWidget(middle_panel_widget)
         
-        # Right panel widget - Prompt and results
+        # Set minimum width for middle panel - more flexible
+        middle_scroll.setMinimumWidth(280)
+        middle_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        
+        # Column 3 (Right) - Prompt and results with scroll
+        right_scroll = QScrollArea()
+        right_scroll.setWidgetResizable(True)
+        right_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        right_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        right_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        right_scroll.setStyleSheet("QScrollArea { border: none; background-color: #f5f7fa; }")
+        
         right_panel_widget = QWidget()
         right_panel_widget.setStyleSheet("background-color: #f5f7fa;")
+        right_panel_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
         right_panel = QVBoxLayout()
         right_panel.setSpacing(15)
         right_panel.setContentsMargins(10, 10, 10, 10)
@@ -1778,7 +1838,7 @@ class Qwen3VLApp(QMainWindow):
         params_layout.addLayout(rep_penalty_layout)
         
         params_group.setLayout(params_layout)
-        right_panel.addWidget(params_group)
+        right_panel.addWidget(params_group, 1)  # Stretch factor 1 for params
         
         # Process button
         self.process_btn = QPushButton("Xử Lý Hình Ảnh")
@@ -1802,15 +1862,20 @@ class Qwen3VLApp(QMainWindow):
         self.processing_time_label.setStyleSheet("color: #7f8c8d; font-size: 11pt; font-weight: bold; padding: 8px; background-color: white; border-radius: 8px;")
         right_panel.addWidget(self.processing_time_label)
         
-        # Output section
+        # Output section - Make it bigger
         output_group = QGroupBox("Kết Quả")
         output_layout = QVBoxLayout()
+        # Give more space to output section
+        output_layout.setSpacing(10)
         
         self.output_text = QTextEdit()
         self.output_text.setReadOnly(True)
         self.output_text.setPlaceholderText("Kết quả sẽ hiển thị tại đây...")
-        # Make output text expandable
+        # Make output text expandable and set flexible minimum height
         self.output_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.output_text.setMinimumHeight(250)  # Very flexible minimum height
+        # Enable word wrap for better text display
+        self.output_text.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
         output_layout.addWidget(self.output_text)
         
         # Save output button
@@ -1819,26 +1884,34 @@ class Qwen3VLApp(QMainWindow):
         output_layout.addWidget(self.save_output_btn)
         
         output_group.setLayout(output_layout)
-        right_panel.addWidget(output_group)
+        # Set stretch factor so output section takes more space
+        right_panel.addWidget(output_group, 3)  # Stretch factor 3 for output
         
         # Add stretch to push content to top
-        right_panel.addStretch()
+        right_panel.addStretch(1)  # Smaller stretch for remaining space
         right_panel_widget.setLayout(right_panel)
         
-        # Set minimum width for right panel
-        right_panel_widget.setMinimumWidth(400)
-        right_panel_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        # Set scroll area widget
+        right_scroll.setWidget(right_panel_widget)
         
-        # Add panels to splitter
-        ocr_splitter.addWidget(left_panel_widget)
-        ocr_splitter.addWidget(right_panel_widget)
+        # Set minimum width for right panel - flexible sizing
+        right_scroll.setMinimumWidth(320)
+        right_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
-        # Set stretch factors (left: 1, right: 2)
+        # Add scroll areas to splitter (3 columns: left, middle, right)
+        ocr_splitter.addWidget(left_scroll)
+        ocr_splitter.addWidget(middle_scroll)
+        ocr_splitter.addWidget(right_scroll)
+        
+        # Set stretch factors (left: 1, middle: 1.5, right: 2.5) - prioritize column 3
         ocr_splitter.setStretchFactor(0, 1)
         ocr_splitter.setStretchFactor(1, 2)
+        ocr_splitter.setStretchFactor(2, 3)
         
-        # Set initial sizes (40% left, 60% right)
-        ocr_splitter.setSizes([400, 600])
+        # Set initial sizes proportionally - balanced with more space for column 3
+        # Column 1: 22%, Column 2: 32%, Column 3: 46%
+        total_width = 1200  # Approximate default width
+        ocr_splitter.setSizes([int(total_width * 0.22), int(total_width * 0.32), int(total_width * 0.46)])
         
         # Add splitter to OCR tab layout
         ocr_layout = QHBoxLayout()
@@ -2182,6 +2255,33 @@ class Qwen3VLApp(QMainWindow):
         """Handle model selection change"""
         selected_model = self.model_combo.currentData()
         
+        # Warn if selecting 4B model on CPU
+        if selected_model == "4B":
+            current_device = self.device_combo.currentData()
+            if current_device == "cpu":
+                from PyQt6.QtWidgets import QMessageBox
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setWindowTitle("Cảnh Báo Model Mạnh Trên CPU")
+                msg.setText("Model mạnh (4B) trên CPU sẽ RẤT CHẬM và NẶNG!")
+                msg.setInformativeText(
+                    "Model OCR mạnh (4B) không được khuyến nghị trên CPU vì:\n\n"
+                    "• Rất chậm (có thể mất vài phút mỗi ảnh)\n"
+                    "• Tiêu tốn RAM lớn (~10-12GB)\n"
+                    "• Có thể gây treo máy\n\n"
+                    "Khuyến nghị:\n"
+                    "• Chuyển sang GPU (nếu có)\n"
+                    "• Hoặc dùng Model nhẹ (2B) cho CPU\n\n"
+                    "Bạn vẫn muốn dùng Model mạnh trên CPU?"
+                )
+                msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+                msg.setDefaultButton(QMessageBox.StandardButton.No)
+                
+                if msg.exec() == QMessageBox.StandardButton.No:
+                    # Revert to 2B model
+                    self.model_combo.setCurrentIndex(1)  # Index 1 = 2B
+                    return
+        
         if self.model is not None:
             # Model đã được load, cần reload với model mới
             from PyQt6.QtWidgets import QMessageBox
@@ -2411,7 +2511,44 @@ class Qwen3VLApp(QMainWindow):
                 print(f"Critical error in auto_load_model: {e}")
     
     def on_device_changed(self, index):
-        """Handle device selection change"""
+        """Handle device selection change - auto switch model based on device"""
+        selected_device = self.device_combo.currentData()
+        
+        # Auto-switch model based on device
+        if selected_device == "cpu":
+            # CPU selected - recommend light model (2B)
+            if self.current_model == "4B":
+                # Show notification and switch to 2B
+                from PyQt6.QtWidgets import QMessageBox
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Icon.Information)
+                msg.setWindowTitle("Chuyển Model")
+                msg.setText("CPU đã được chọn - Tự động chuyển sang Model OCR nhẹ (2B)")
+                msg.setInformativeText("Model nhẹ (2B) chạy tốt hơn trên CPU.\n\nModel mạnh (4B) rất nặng và chậm trên CPU.")
+                msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg.exec()
+                
+                # Switch to 2B model
+                self.model_combo.setCurrentIndex(1)  # Index 1 = 2B
+                
+        elif selected_device == "cuda":
+            # GPU selected - can use strong model (4B)
+            if self.current_model == "2B":
+                # Ask if want to switch to 4B
+                from PyQt6.QtWidgets import QMessageBox
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Icon.Question)
+                msg.setWindowTitle("Chuyển Model")
+                msg.setText("GPU đã được chọn - Bạn có muốn chuyển sang Model OCR mạnh (4B)?")
+                msg.setInformativeText("Model mạnh (4B) chính xác hơn và chạy tốt trên GPU.\n\nNhấn Yes để chuyển, No để giữ model nhẹ.")
+                msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+                msg.setDefaultButton(QMessageBox.StandardButton.Yes)
+                
+                if msg.exec() == QMessageBox.StandardButton.Yes:
+                    # Switch to 4B model
+                    self.model_combo.setCurrentIndex(0)  # Index 0 = 4B
+        
+        # Continue with original logic
         # Cập nhật label khuyến nghị dựa trên thiết bị đã chọn
         selected_device = self.device_combo.currentData()
         
@@ -2444,7 +2581,8 @@ class Qwen3VLApp(QMainWindow):
                 self.load_model()
             else:
                 # Revert to previous device selection
-                if torch.cuda.is_available():
+                torch = get_torch()
+                if is_cuda_available():
                     if self.current_device == "cuda":
                         self.device_combo.setCurrentIndex(0)
                     else:
@@ -2474,7 +2612,8 @@ class Qwen3VLApp(QMainWindow):
             self.processor = None
         
         # Clear CUDA cache if available
-        if torch.cuda.is_available():
+        torch = get_torch()
+        if is_cuda_available():
             torch.cuda.empty_cache()
         
         self.model_status.setText("Trạng thái: Model đã được gỡ")
@@ -2973,7 +3112,12 @@ class Qwen3VLApp(QMainWindow):
         success_count = sum(1 for r in self.batch_results if r.get('success', False))
         error_count = len(self.batch_results) - success_count
         
+        # Stop batch progress bar - ensure it's at 100% and stopped
         self.batch_progress_bar.setValue(self.total_batch_files)
+        self.batch_progress_bar.setMaximum(self.total_batch_files)  # Ensure range is correct
+        # Optional: hide after completion
+        # self.batch_progress_bar.setVisible(False)
+        
         self.batch_info_label.setText(
             f"Hoàn thành! Thành công: {success_count}/{self.total_batch_files}, "
             f"Lỗi: {error_count}"
@@ -3378,7 +3522,11 @@ class Qwen3VLApp(QMainWindow):
         
         # Display result
         self.output_text.setText(result)
+        # Stop progress bar - set range and value to stop animation
+        self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(100)
+        # Hide progress bar after a short delay (optional, or keep it visible at 100%)
+        # self.progress_bar.setVisible(False)  # Uncomment to hide completely
         self.progress_label.setText("Hoàn thành!")
         self.progress_label.setStyleSheet("color: #27ae60; font-size: 10pt;")
         
@@ -3471,6 +3619,9 @@ class Qwen3VLApp(QMainWindow):
             self.processing_time_label.setStyleSheet("color: red; font-size: 10pt; font-weight: bold;")
         
         self.output_text.setText(error_message)
+        # Stop progress bar - set range and value to stop animation
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)  # Set to 0 on error
         self.progress_bar.setVisible(False)
         self.progress_label.setText("Đã xảy ra lỗi")
         self.process_btn.setEnabled(True)
@@ -3483,16 +3634,43 @@ class Qwen3VLApp(QMainWindow):
             self,
             "Lưu Kết Quả",
             "",
-            "File Text (*.txt);;Tất Cả File (*)"
+            "File JSON (*.json);;File Text (*.txt);;Tất Cả File (*)"
         )
         
         if file_name:
             try:
-                with open(file_name, 'w', encoding='utf-8') as f:
-                    f.write(self.output_text.toPlainText())
+                # Chuẩn bị dữ liệu JSON
+                output_data = {
+                    "ocr_result": self.output_text.toPlainText(),
+                    "file_info": {
+                        "file_path": self.current_file_path if self.current_file_path else None,
+                        "file_name": os.path.basename(self.current_file_path) if self.current_file_path else None,
+                        "file_type": self.current_file_type if self.current_file_type else None
+                    },
+                    "processing_info": {
+                        "model": self.current_model,
+                        "device": self.current_device,
+                        "timestamp": datetime.now().isoformat(),
+                        "processing_time": self.processing_time_label.text()
+                    },
+                    "generation_params": self.get_generation_params()
+                }
+                
+                # Kiểm tra extension để quyết định format
+                if file_name.endswith('.json'):
+                    # Lưu dạng JSON
+                    with open(file_name, 'w', encoding='utf-8') as f:
+                        json.dump(output_data, f, ensure_ascii=False, indent=2)
+                else:
+                    # Lưu dạng text thuần
+                    with open(file_name, 'w', encoding='utf-8') as f:
+                        f.write(self.output_text.toPlainText())
+                
                 self.progress_label.setText(f"Đã lưu kết quả vào {file_name}")
+                self.progress_label.setStyleSheet("color: #27ae60; font-size: 10pt;")
             except Exception as e:
                 self.progress_label.setText(f"Lỗi khi lưu file: {str(e)}")
+                self.progress_label.setStyleSheet("color: red; font-size: 10pt;")
 
 
     def closeEvent(self, event):

@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                               QFileDialog, QProgressBar, QGroupBox, QSpinBox,
                               QDoubleSpinBox, QCheckBox, QComboBox, QMessageBox,
                               QProgressDialog, QTabWidget, QListWidget, QListWidgetItem,
-                              QSplitter, QScrollArea)
+                              QSplitter, QScrollArea, QSizePolicy)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize, QRect, QPoint
 from PyQt6.QtGui import QPixmap, QImage, QPainter, QPen, QColor
 # Lazy import torch and transformers để tăng tốc khởi động
@@ -1450,6 +1450,8 @@ class Qwen3VLApp(QMainWindow):
     def init_ui(self):
         self.setWindowTitle("Ứng Dụng OCR")
         self.setGeometry(100, 100, 1400, 900)
+        # Set minimum window size for responsive design
+        self.setMinimumSize(800, 600)
         
         # Apply modern stylesheet
         self.apply_modern_stylesheet()
@@ -1495,14 +1497,25 @@ class Qwen3VLApp(QMainWindow):
         # Tab 1: OCR
         ocr_tab = QWidget()
         ocr_tab.setStyleSheet("background-color: #f5f7fa;")
-        ocr_layout = QHBoxLayout()
-        ocr_layout.setSpacing(20)
-        ocr_layout.setContentsMargins(20, 20, 20, 20)
-        ocr_tab.setLayout(ocr_layout)
         
-        # Left panel - Image and controls
+        # Use QSplitter for resizable panels
+        ocr_splitter = QSplitter(Qt.Orientation.Horizontal)
+        ocr_splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: #e1e8ed;
+                width: 3px;
+            }
+            QSplitter::handle:hover {
+                background-color: #3498db;
+            }
+        """)
+        
+        # Left panel widget - Image and controls
+        left_panel_widget = QWidget()
+        left_panel_widget.setStyleSheet("background-color: #f5f7fa;")
         left_panel = QVBoxLayout()
         left_panel.setSpacing(15)
+        left_panel.setContentsMargins(10, 10, 10, 10)
         
         # Model loading section
         model_group = QGroupBox("Cấu Hình Model")
@@ -1628,7 +1641,9 @@ class Qwen3VLApp(QMainWindow):
         self.image_label = ImageROILabel()
         self.image_label.setText("Chưa có file nào được tải")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setMinimumSize(400, 400)
+        # Make image label responsive - minimum size but can expand
+        self.image_label.setMinimumSize(300, 300)
+        self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.image_label.setStyleSheet("""
             border: 3px solid #e1e8ed;
             border-radius: 12px;
@@ -1674,11 +1689,20 @@ class Qwen3VLApp(QMainWindow):
         file_group.setLayout(file_layout)
         left_panel.addWidget(file_group)
         
-        main_layout.addLayout(left_panel, 1)
+        # Add stretch to push content to top
+        left_panel.addStretch()
+        left_panel_widget.setLayout(left_panel)
         
-        # Right panel - Prompt and results
+        # Set minimum width for left panel
+        left_panel_widget.setMinimumWidth(350)
+        left_panel_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        
+        # Right panel widget - Prompt and results
+        right_panel_widget = QWidget()
+        right_panel_widget.setStyleSheet("background-color: #f5f7fa;")
         right_panel = QVBoxLayout()
         right_panel.setSpacing(15)
+        right_panel.setContentsMargins(10, 10, 10, 10)
         
         # Generation parameters
         params_group = QGroupBox("Tham Số Generation")
@@ -1785,6 +1809,8 @@ class Qwen3VLApp(QMainWindow):
         self.output_text = QTextEdit()
         self.output_text.setReadOnly(True)
         self.output_text.setPlaceholderText("Kết quả sẽ hiển thị tại đây...")
+        # Make output text expandable
+        self.output_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         output_layout.addWidget(self.output_text)
         
         # Save output button
@@ -1795,7 +1821,31 @@ class Qwen3VLApp(QMainWindow):
         output_group.setLayout(output_layout)
         right_panel.addWidget(output_group)
         
-        ocr_layout.addLayout(right_panel, 1)
+        # Add stretch to push content to top
+        right_panel.addStretch()
+        right_panel_widget.setLayout(right_panel)
+        
+        # Set minimum width for right panel
+        right_panel_widget.setMinimumWidth(400)
+        right_panel_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        
+        # Add panels to splitter
+        ocr_splitter.addWidget(left_panel_widget)
+        ocr_splitter.addWidget(right_panel_widget)
+        
+        # Set stretch factors (left: 1, right: 2)
+        ocr_splitter.setStretchFactor(0, 1)
+        ocr_splitter.setStretchFactor(1, 2)
+        
+        # Set initial sizes (40% left, 60% right)
+        ocr_splitter.setSizes([400, 600])
+        
+        # Add splitter to OCR tab layout
+        ocr_layout = QHBoxLayout()
+        ocr_layout.setContentsMargins(0, 0, 0, 0)
+        ocr_layout.setSpacing(0)
+        ocr_layout.addWidget(ocr_splitter)
+        ocr_tab.setLayout(ocr_layout)
         
         # Thêm OCR tab vào tab widget
         self.tab_widget.addTab(ocr_tab, "OCR")
@@ -1803,13 +1853,25 @@ class Qwen3VLApp(QMainWindow):
         # Tab 2: History
         history_tab = QWidget()
         history_tab.setStyleSheet("background-color: #f5f7fa;")
-        history_layout = QHBoxLayout()
-        history_layout.setContentsMargins(20, 20, 20, 20)
-        history_layout.setSpacing(20)
-        history_tab.setLayout(history_layout)
         
-        # History left panel - List
+        # Use QSplitter for resizable panels in History tab
+        history_splitter = QSplitter(Qt.Orientation.Horizontal)
+        history_splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: #e1e8ed;
+                width: 3px;
+            }
+            QSplitter::handle:hover {
+                background-color: #3498db;
+            }
+        """)
+        
+        # History left panel widget - List
+        history_left_widget = QWidget()
+        history_left_widget.setStyleSheet("background-color: #f5f7fa;")
         history_left = QVBoxLayout()
+        history_left.setContentsMargins(10, 10, 10, 10)
+        history_left.setSpacing(15)
         history_left_group = QGroupBox("Lịch Sử OCR")
         history_left_layout = QVBoxLayout()
         
@@ -1818,6 +1880,8 @@ class Qwen3VLApp(QMainWindow):
         self.history_list_widget.itemClicked.connect(self.on_history_item_clicked)
         self.history_list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.history_list_widget.customContextMenuRequested.connect(self.on_history_context_menu)
+        # Make history list responsive
+        self.history_list_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         history_left_layout.addWidget(self.history_list_widget)
         
         # Buttons layout
@@ -1844,15 +1908,29 @@ class Qwen3VLApp(QMainWindow):
         history_left_group.setLayout(history_left_layout)
         history_left.addWidget(history_left_group)
         
-        # History right panel - Preview and Result
+        # Add stretch to push content to top
+        history_left.addStretch()
+        history_left_widget.setLayout(history_left)
+        
+        # Set minimum width for history left panel
+        history_left_widget.setMinimumWidth(300)
+        history_left_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        
+        # History right panel widget - Preview and Result
+        history_right_widget = QWidget()
+        history_right_widget.setStyleSheet("background-color: #f5f7fa;")
         history_right = QVBoxLayout()
+        history_right.setContentsMargins(10, 10, 10, 10)
+        history_right.setSpacing(15)
         history_right_group = QGroupBox("Chi Tiết")
         history_right_layout = QVBoxLayout()
         
         # Preview image
         self.history_preview_label = QLabel()
-        self.history_preview_label.setMinimumSize(300, 300)
-        self.history_preview_label.setMaximumSize(500, 500)
+        # Make preview image responsive - flexible sizing
+        self.history_preview_label.setMinimumSize(250, 250)
+        self.history_preview_label.setMaximumSize(600, 600)
+        self.history_preview_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.history_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.history_preview_label.setStyleSheet("""
             border: 2px solid #e1e8ed;
@@ -1872,6 +1950,8 @@ class Qwen3VLApp(QMainWindow):
         self.history_result_text.setReadOnly(False)  # Cho phép edit
         self.history_result_text.setPlaceholderText("Chọn một mục để xem kết quả OCR...")
         self.history_result_text.textChanged.connect(self.on_history_result_changed)
+        # Make history result text responsive
+        self.history_result_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         history_right_layout.addWidget(self.history_result_text)
         
         # Edit buttons
@@ -1898,8 +1978,31 @@ class Qwen3VLApp(QMainWindow):
         history_right_group.setLayout(history_right_layout)
         history_right.addWidget(history_right_group)
         
-        history_layout.addLayout(history_left, 1)
-        history_layout.addLayout(history_right, 2)
+        # Add stretch to push content to top
+        history_right.addStretch()
+        history_right_widget.setLayout(history_right)
+        
+        # Set minimum width for history right panel
+        history_right_widget.setMinimumWidth(400)
+        history_right_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        
+        # Add panels to splitter
+        history_splitter.addWidget(history_left_widget)
+        history_splitter.addWidget(history_right_widget)
+        
+        # Set stretch factors (left: 1, right: 2)
+        history_splitter.setStretchFactor(0, 1)
+        history_splitter.setStretchFactor(1, 2)
+        
+        # Set initial sizes (40% left, 60% right)
+        history_splitter.setSizes([300, 500])
+        
+        # Add splitter to History tab layout
+        history_layout = QHBoxLayout()
+        history_layout.setContentsMargins(0, 0, 0, 0)
+        history_layout.setSpacing(0)
+        history_layout.addWidget(history_splitter)
+        history_tab.setLayout(history_layout)
         
         # Thêm History tab vào tab widget
         self.tab_widget.addTab(history_tab, "Lịch Sử")

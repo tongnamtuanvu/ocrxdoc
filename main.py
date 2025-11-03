@@ -1911,28 +1911,30 @@ If any information is not found, please return a null or empty string for that k
         
         # Grid layout for parameters (2 columns) to save space
         params_grid = QGridLayout()
-        params_grid.setSpacing(8)
-        params_grid.setColumnStretch(1, 1)  # Column 1 (values) stretch
-        params_grid.setColumnStretch(3, 1)  # Column 3 (values) stretch
-        params_grid.setColumnMinimumWidth(0, 80)   # Label column 1
-        params_grid.setColumnMinimumWidth(1, 90)   # Value column 1
-        params_grid.setColumnMinimumWidth(2, 90)   # Label column 2
-        params_grid.setColumnMinimumWidth(3, 90)   # Value column 2
+        params_grid.setSpacing(5)  # Giảm spacing xuống 5
+        params_grid.setColumnStretch(1, 0)  # Không stretch cho value columns
+        params_grid.setColumnStretch(3, 0)
+        params_grid.setColumnMinimumWidth(0, 65)   # Label column 1 - giảm xuống
+        params_grid.setColumnMinimumWidth(1, 60)   # Value column 1 - giảm xuống
+        params_grid.setColumnMinimumWidth(2, 60)   # Label column 2 - giảm xuống
+        params_grid.setColumnMinimumWidth(3, 60)   # Value column 2 - giảm xuống
         
         # Row 0: Max tokens | Temperature
         params_grid.addWidget(QLabel("Tokens:"), 0, 0)
         self.max_tokens_spin = QSpinBox()
         self.max_tokens_spin.setRange(1, 16384)
         self.max_tokens_spin.setValue(3000)
-        self.max_tokens_spin.setMinimumWidth(90)
+        self.max_tokens_spin.setMinimumWidth(60)
+        self.max_tokens_spin.setMaximumWidth(70)  # Giới hạn max width
         params_grid.addWidget(self.max_tokens_spin, 0, 1)
         
-        params_grid.addWidget(QLabel("Temp:"), 0, 2)  # Rút ngắn label
+        params_grid.addWidget(QLabel("Temp:"), 0, 2)
         self.temperature_spin = QDoubleSpinBox()
         self.temperature_spin.setRange(0.0, 2.0)
         self.temperature_spin.setSingleStep(0.1)
         self.temperature_spin.setValue(0.2)
-        self.temperature_spin.setMinimumWidth(90)
+        self.temperature_spin.setMinimumWidth(60)
+        self.temperature_spin.setMaximumWidth(70)
         params_grid.addWidget(self.temperature_spin, 0, 3)
         
         # Row 1: Top-p | Top-k
@@ -1941,23 +1943,26 @@ If any information is not found, please return a null or empty string for that k
         self.top_p_spin.setRange(0.0, 1.0)
         self.top_p_spin.setSingleStep(0.1)
         self.top_p_spin.setValue(0.8)
-        self.top_p_spin.setMinimumWidth(90)
+        self.top_p_spin.setMinimumWidth(60)
+        self.top_p_spin.setMaximumWidth(70)
         params_grid.addWidget(self.top_p_spin, 1, 1)
         
         params_grid.addWidget(QLabel("Top-k:"), 1, 2)
         self.top_k_spin = QSpinBox()
         self.top_k_spin.setRange(1, 100)
         self.top_k_spin.setValue(20)
-        self.top_k_spin.setMinimumWidth(90)
+        self.top_k_spin.setMinimumWidth(60)
+        self.top_k_spin.setMaximumWidth(70)
         params_grid.addWidget(self.top_k_spin, 1, 3)
         
         # Row 2: Repetition penalty (span 2 columns)
-        params_grid.addWidget(QLabel("Rep. Penalty:"), 2, 0)  # Rút ngắn label
+        params_grid.addWidget(QLabel("Rep. Penalty:"), 2, 0)
         self.rep_penalty_spin = QDoubleSpinBox()
         self.rep_penalty_spin.setRange(1.0, 2.0)
         self.rep_penalty_spin.setSingleStep(0.1)
         self.rep_penalty_spin.setValue(1.0)
-        self.rep_penalty_spin.setMinimumWidth(90)
+        self.rep_penalty_spin.setMinimumWidth(60)
+        self.rep_penalty_spin.setMaximumWidth(70)
         params_grid.addWidget(self.rep_penalty_spin, 2, 1)
         
         params_layout.addLayout(params_grid)

@@ -35,8 +35,8 @@ dist/
 Thumbs.db
 desktop.ini
 
-# Poppler (can be committed if needed)
-# poppler/
+# Poppler (too large for GitHub)
+poppler/
 
 # Temporary files
 *.tmp

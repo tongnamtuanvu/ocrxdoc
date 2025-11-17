@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ocrxdoc"
+version = "1.0.0"
+description = "Python Framework for OCR using Qwen3-VL Models"
+readme = "README_OCRXDOC.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "OCR Framework"}
+]
+keywords = ["ocr", "ai", "qwen", "vision-language", "document-processing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "torch>=2.0.0",
+    "transformers>=4.57.0",
+    "Pillow>=10.0.0",
+    "accelerate>=0.20.0",
+]
+
+[project.optional-dependencies]
+pdf = ["pdf2image>=1.16.0"]
+docx = ["python-docx>=1.1.0"]
+all = [
+    "pdf2image>=1.16.0",
+    "python-docx>=1.1.0",
+    "PyPDF2>=3.0.0",
+    "psutil>=5.9.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/ocrxdoc"
+Documentation = "https://github.com/yourusername/ocrxdoc#readme"
+Repository = "https://github.com/yourusername/ocrxdoc"
+Issues = "https://github.com/yourusername/ocrxdoc/issues"
+
+[tool.setuptools]
+packages = ["ocrxdoc"]
+

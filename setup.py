@@ -19,7 +19,8 @@ setup(
     description="Python Framework for OCR using Qwen3-VL Models",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/ocrxdoc",
+    url="https://github.com/tongnamtuanvu/ocrxdoc",
+    license="MIT",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",

@@ -43,10 +43,11 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/ocrxdoc"
-Documentation = "https://github.com/yourusername/ocrxdoc#readme"
-Repository = "https://github.com/yourusername/ocrxdoc"
-Issues = "https://github.com/yourusername/ocrxdoc/issues"
+Homepage = "https://github.com/tongnamtuanvu/ocrxdoc"
+Documentation = "https://github.com/tongnamtuanvu/ocrxdoc#readme"
+Repository = "https://github.com/tongnamtuanvu/ocrxdoc"
+Issues = "https://github.com/tongnamtuanvu/ocrxdoc/issues"
+PyPI = "https://pypi.org/project/ocrxdoc/"
 
 [tool.setuptools]
 packages = ["ocrxdoc"]
